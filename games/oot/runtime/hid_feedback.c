@@ -119,6 +119,11 @@ static uint32_t vib_info(VibrationDeviceInfo *out, const uint32_t *h) {
     int side = vibration_side(h); *out = (VibrationDeviceInfo){side >= 0 ? 1u : 0u, side >= 0 ? (uint32_t)side + 1 : 0}; return 0;
 }
 static uint32_t vib_mounted(bool *out, const uint32_t *h) { if (!out) runtime_fail("vibration mounted pointer"); *out = vibration_side(h) >= 0; return 0; }
+/* SDK 22 asks this on the first Ocarina note. Use the host's
+   controller feedback capability instead of the unimplemented hid service. */
+static bool ounce_vib_mounted(const uint32_t *h) {
+    return h && runtime_rumble_enabled() && vibration_side(h) >= 0 && runtime_feedback_present(0);
+}
 static uint32_t vib_permitted(bool *out) { if (!out) runtime_fail("vibration permitted pointer"); *out = true; return 0; }
 
 static void six_axis_check(const uint32_t *h) {
@@ -200,6 +205,8 @@ void runtime_hid_feedback_stats(uint64_t *values, uint64_t *motion_reads) { *val
 
 void *runtime_hid_feedback_override(const char *name) {
     const bool rumble = runtime_rumble_enabled(), gyro = runtime_gyro_enabled();
+    if (!strcmp(name, "_ZN2nn3hid29IsOunceVibrationDeviceMountedERKNS0_21VibrationDeviceHandleE"))
+        return (void *)ounce_vib_mounted;
     if (!strcmp(name, "_ZN2nn3hid25GetVibrationDeviceHandlesEPNS0_21VibrationDeviceHandleEiRKjNS_4util10BitFlagSetILi32ENS0_12NpadStyleTagEEE"))
         return rumble ? NULL : (void *)no_handles;   /* on: the SDK's own (nn::hid::utility) */
     if (!strcmp(name, "_ZN2nn3hid23GetSixAxisSensorHandlesEPNS0_19SixAxisSensorHandleEiRKjNS_4util10BitFlagSetILi32ENS0_12NpadStyleTagEEE"))
