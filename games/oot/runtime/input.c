@@ -132,9 +132,23 @@ static void supported_ids(const uint32_t *ids,uint64_t n){if(n>10||(!ids&&n))run
 static void supported_styles(uint32_t value){pthread_mutex_lock(&inputLock);styles=value;pthread_mutex_unlock(&inputLock);}
 static uint32_t style(const uint32_t *id){if(!id)runtime_fail("controller id pointer");input_log("style set",*id);pthread_mutex_lock(&inputLock);uint32_t v=enabled&&allowed&&*id==pad_id()?(styles&pad_style()):0;pthread_mutex_unlock(&inputLock);return v;}
 static int pad_states(NpadState *out,int max,const uint32_t *id,uint32_t want_style);
+#if defined(GAME_OOT) && !TARGET_OS_IPHONE
+extern void runtime_oot_live_tick(void);
+extern int runtime_oot_live_command(const char *line);
+#endif
 __attribute__((weak)) int runtime_vr_stick_pitch_locked(void){return 0;}   /* zeldaVR: game_patches_v143.c's when VR locks the pitch */
-static int full_states(NpadState *out,int max,const uint32_t *id){return pad_states(out,max,id,1);}
-static int handheld_states(NpadState *out,int max,const uint32_t *id){return pad_states(out,max,id,2);}
+static int full_states(NpadState *out,int max,const uint32_t *id){
+ int n=pad_states(out,max,id,1);
+#if defined(GAME_OOT) && !TARGET_OS_IPHONE
+ if(n&&id&&*id==0)runtime_oot_live_tick();
+#endif
+ return n;}
+static int handheld_states(NpadState *out,int max,const uint32_t *id){
+ int n=pad_states(out,max,id,2);
+#if defined(GAME_OOT) && !TARGET_OS_IPHONE
+ if(n&&id&&*id==0x20)runtime_oot_live_tick();
+#endif
+ return n;}
 static int pad_states(NpadState *out,int max,const uint32_t *id,uint32_t want_style){if(max<=0)return 0;if(id)input_log(want_style==2?"handheld state":"full-key state",*id);if(!out||!id)runtime_fail("controller output pointer");pthread_mutex_lock(&inputLock);NpadState state={.sampling=++sample};if(enabled&&allowed&&*id==pad_id()&&want_style==pad_style()&&(styles&want_style)){
  state.attributes=1;for(unsigned i=0;i<128;i++)if(keys[i])state.buttons|=button(i);state.buttons|=heldOut.buttons|pending;pending=0;
  extern uint64_t runtime_opening_auto_skip_buttons(void);state.buttons|=runtime_opening_auto_skip_buttons();
@@ -285,6 +299,9 @@ static void *input_file(void *arg) {
             continue;
         }
         if (runtime_survey_command(line)) continue;
+#if defined(GAME_OOT) && !TARGET_OS_IPHONE
+        if (runtime_oot_live_command(line)) continue;
+#endif
         unsigned code, ms; int used = 0;
         if (sscanf(line, "down %u %n", &code, &used) == 1 && used && !line[used] && code < 128) {
             fprintf(stderr,"[totk-input] file: key %u down\n",code);runtime_input_key_synthetic(code,1);

@@ -19,6 +19,7 @@
 
 #if defined(GAME_OOT) && !TARGET_OS_IPHONE
 #include "oot_timestep.h"
+#include "oot_live.h"
 #else
 /* Other NS2 titles retain their native time-step policy. */
 void runtime_frame_step_pin(double ms) { (void)ms; }
@@ -613,6 +614,7 @@ void runtime_game_patches(Module *m) {
     patch_oot_timestep(m);
     patch_oot_fixed_res(m);
     patch_oot_aspect(m);
+    runtime_oot_live_init(m);
     if (getenv("TOTK_EXPORT_IOS")) export_oot_fixed_res_ios(m);   /* only when exporting for the phone */
 #elif defined(GAME_OOT)
     oot_ios_fixed_res(m);
