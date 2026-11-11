@@ -31,6 +31,13 @@ offset, normalization, or forced mono is applied.
   correction.
 - Temporary tracing was removed from the final build. Local source audio,
   recordings, and private game data are not part of this change.
+- Final installed-app check: a continuous 30-second title recording matches
+  the original source on both channels above 0.9999999 correlation, at unity
+  gain. Left measures -28.275 dBFS and right -28.398 dBFS; their 0.124 dB
+  difference matches the source's natural balance for that segment. No
+  hardware underruns, overruns, missing frames, or backlog trims were reported
+  during this capture. The installed executable's code section matches the
+  tested runtime, and the full application passes signature verification.
 
 The longer diagnostic capture also contains silent intervals. This change
 verifies restored channel balance during playback; it does not establish
