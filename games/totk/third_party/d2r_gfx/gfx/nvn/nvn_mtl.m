@@ -8315,14 +8315,7 @@ static void pkg_evict_sweep(void) {
     static int mode = -1; static uint64_t budget, low, high, crit;
     if (mode < 0) {
         const char *e = getenv("TOTK_TEX_EVICT");
-        uint64_t default_budget = 0;
-#if defined(GAME_OOT) && TARGET_OS_OSX
-        // An explicit value, including empty or 0, keeps the existing env_mb behavior.
-        if (!getenv("TOTK_TEX_EVICT_MB") &&
-            NSProcessInfo.processInfo.physicalMemory <= (UINT64_C(16) << 30))
-            default_budget = 1536;
-#endif
-        budget = env_mb("TOTK_TEX_EVICT_MB", default_budget); low = env_mb("TOTK_TEX_EVICT_LOW_MB", 250); high = env_mb("TOTK_TEX_EVICT_HIGH_MB", 350); crit = env_mb("TOTK_TEX_EVICT_CRIT_MB", 150);
+        budget = env_mb("TOTK_TEX_EVICT_MB", 0); low = env_mb("TOTK_TEX_EVICT_LOW_MB", 250); high = env_mb("TOTK_TEX_EVICT_HIGH_MB", 350); crit = env_mb("TOTK_TEX_EVICT_CRIT_MB", 150);
         mode = e && !atoi(e) ? 0 : budget ? 2 : TARGET_OS_IPHONE ? 1 : 0;
         if (mode == 1) MLOG("贴图副本淘汰：开（可用内存低于 %llu MB 时淘汰久未使用的副本，直到 %llu MB；TOTK_TEX_EVICT=0 关）", (unsigned long long)(low >> 20), (unsigned long long)(high >> 20));
         if (mode == 2) MLOG("贴图副本淘汰：开（副本总量上限 %llu MB）", (unsigned long long)(budget >> 20));
